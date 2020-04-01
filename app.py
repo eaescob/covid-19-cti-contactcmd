@@ -30,7 +30,6 @@ def build_response(message):
 
 @app.route('/listmembers', methods=['POST'])
 def listmembers():
-    response_url=request.form['response_url']
     text=request.form['text']
     user_name=request.form['user_name']
 
@@ -54,7 +53,6 @@ def listmembers():
 
 @app.route('/addcontact', methods=['POST'])
 def addcontact():
-    response_url=request.form['response_url']
     text=request.form['text']
     user_name=request.form['user_name']
 
@@ -64,7 +62,10 @@ def addcontact():
         message = "Missing organization(s) you want to be a member of"
     else:
         orgs = text.split(',')
-        plural = len(orgs) > 0 ? "s" : ""
+        plural =""
+        if len(orgs) > 0:
+            plural="s"
+            
         message - "You have been added to the following organization%s: %s" % (plural, orgs)
         foreach org in orgs:
             cc = CTIContact.query.filter(
