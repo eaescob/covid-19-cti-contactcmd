@@ -121,7 +121,7 @@ def listmembers():
         cc = db.session.query(CTIContact).filter(
             #CTIContact.data.contains({'organization' : text})
             exists().select_from(cs).where(
-                func.lower(org) == text.lower()
+                func.lower(org) == func.lower(text)
                 )
             ).first()
 
