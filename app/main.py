@@ -67,7 +67,7 @@ def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
     token=request.form['token']
-    user_id=requets.form['user_id']
+    user_id=request.form['user_id']
 
     print(user_id)
 
