@@ -83,7 +83,7 @@ def addcontact():
     user_name=request.form['user_name']
 
     #error checking
-    response = ""
+    message = ""
     if len(text) == 0:
         message = "Missing organization(s) you want to be a member of"
     else:
