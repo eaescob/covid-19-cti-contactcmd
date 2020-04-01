@@ -22,7 +22,11 @@ heroku = Heroku(app)
 db = SQLAlchemy(app)
 slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
+slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
 ## helper functions
+
+def validate_slack_signature():
+
 def build_response(message):
     resp = { "blocks" : [
         { "type" : "section",
@@ -45,8 +49,8 @@ def get_slack_profile(user_id):
                 }
         return contact_info
     except:
-
-    return None
+        pass
+return None
 
 ##ORM
 class CTIContact(db.Model):
