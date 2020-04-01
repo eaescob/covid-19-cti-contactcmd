@@ -89,7 +89,7 @@ def listmembers():
             for contact in cc.data['contacts']:
                 contacts += contact + '\n'
             contacts=contacts.rstrip('\n')
-            message = "Contacs for {} : {}".format(text, contacts)
+            message = "Contacs for {}:\n {}".format(text, contacts)
             resp = build_response(message)
             return jsonify(resp)
 
