@@ -101,12 +101,19 @@ def listorgs():
     token=request.form['token']
 
     all_ccs = db.session.query(CTIContact).all()
+    resp = {}
+    if len(text) == 0:
+        message = "Current registered organizations:\n"
+        for cc in all_ccs:
+            message += '- ' + cc.data['organization'] + '\n'
 
-    message = "Current registered organizations:\n"
-    for cc in all_ccs:
-        message += '- ' + cc.data['organization'] + '\n'
-
-    resp = build_response(message)
+        resp = build_response(message)
+    else:
+        message = "Organizations matching your search:\n"
+        for cc in all_ccs:
+            if text.lower() in cc.data['organization'].lower():
+                message += '- ' + cc.data['organization'] + '\n'
+        resp = build_response(message)
     return jsonify(resp)
 
 @app.route('/listmembers', methods=['POST'])
