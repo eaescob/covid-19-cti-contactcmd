@@ -107,6 +107,7 @@ def addcontact():
                 db.session.add(cc)
                 db.session.commit()
             else:
+                print ("Record found")
                 cc.data['contacts'].append(user_name)
                 db.session.commit()
 
