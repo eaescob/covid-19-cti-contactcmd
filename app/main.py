@@ -11,6 +11,8 @@ from flask_heroku import Heroku
 
 from sqlalchemy.dialects.postgresql import JSONB
 
+from urllib import urlencode
+
 app = Flask(__name__)
 #app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -64,8 +66,7 @@ def listmembers():
         return jsonify(resp)
     else:
         cc = CTIContact.query.filter(
-            CTIContact.data[
-                ('organization')
+            CTIContact.data['organization'
             ].cast(sqlalchemy.Text) == text
         ).first()
 
@@ -94,6 +95,7 @@ def addcontact():
 
         message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
+            org = urlencode(org)
             cc = CTIContact.query.filter(
                 CTIContact.data[
                     ('organization')
