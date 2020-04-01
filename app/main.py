@@ -96,10 +96,8 @@ def addcontact():
         message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
             org = urllib.parse.quote(org)
-            cc = CTIContact.query.filter(
-                CTIContact.data[
-                    ('organization')
-                ].cast(sqlalchemy.Text) == org
+            cc = db.session.query(CTIContact).filter(
+                CTIContact.data.contains({'organization' : text})
             ).first()
             if cc is None:
                 cc = CTIContact(
