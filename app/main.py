@@ -41,11 +41,10 @@ def validate_slack_secret(request_body, timestamp, slack_signature):
 
 
 def build_response(message):
-    resp = { "blocks" : [
-        { "type" : "mrkdwn",
-         "text" : message
-        }
-    ]}
+    resp = { "response_type" : "ephemeral",
+            "text" : message,
+            "type" : "mrkdwn"
+            }
     return resp
 
 def get_slack_profile(user_id):
