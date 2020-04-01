@@ -12,6 +12,8 @@ from flask_heroku import Heroku
 
 
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.orm.attributes import flag_modified
 
 app = Flask(__name__)
 #app.config.from_object(os.environ['APP_SETTINGS'])
@@ -35,7 +37,7 @@ def build_response(message):
 class CTIContact(db.Model):
     __tablename__ = 'cti_contacts'
     id = db.Column(db.Integer, primary_key=True)
-    data = db.Column(JSONB)
+    data = db.Column(MutableDict.as_mutable(JSONB))
 
     def __init__(self, data):
         self.data = data
@@ -46,7 +48,7 @@ class CTIContact(db.Model):
 class CTIHelp(db.Model):
         __tablename__ = 'cti_help'
         id = db.Column(db.Integer, primary_key=True)
-        data = db.Column(JSONB)
+        data = db.Column(MutableDict.as_mutable(JSONB))
 
         def __init__(self, data):
                 sefl.data = data;
@@ -109,7 +111,8 @@ def addcontact():
             else:
                 print ("Record found")
                 cc.data['contacts'].append(user_name)
-                cc.save()
+                flag_modified(cc, 'data')
+                db.session.add(cc)
                 db.session.commit()
 
     resp = build_response(message)
