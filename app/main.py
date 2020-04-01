@@ -109,6 +109,7 @@ def addcontact():
             else:
                 print ("Record found")
                 cc.data['contacts'].append(user_name)
+                cc.save()
                 db.session.commit()
 
     resp = build_response(message)
