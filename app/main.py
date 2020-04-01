@@ -65,7 +65,6 @@ def not_authorized(e):
 def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
-    text=urllib.parse.quote(text)
     token=request.form['token']
 
     secret_token=os.environ['LISTMEMBERS_SECRET']
@@ -116,7 +115,6 @@ def addcontact():
 
         message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
-            org = urllib.parse.quote(org)
             cc = db.session.query(CTIContact).filter(
                 CTIContact.data.contains({'organization' : org})
             ).first()
