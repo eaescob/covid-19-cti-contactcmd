@@ -38,7 +38,7 @@ def get_slack_profile(user_id):
     resp=slack.users_profile_get(user=user_id)
     contact_info = {}
     if resp['ok']:
-        contact_info{
+        contact_info= {
             'full_name' :   resp['profile']['real_name'],
             'display_name' :  resp['profile']['display_name'],
             'title' :  resp['profile']['title'],
