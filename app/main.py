@@ -87,7 +87,7 @@ def listorgs():
     if token != secret_token:
         abort(403, description='Not authorized')
 
-    all_ccs = db.session.qery(CTIContact).all()
+    all_ccs = db.session.query(CTIContact).all()
 
     message = "Current registered organizations:\n"
     for cc in all_ccs:
