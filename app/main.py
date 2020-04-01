@@ -2,6 +2,7 @@ import hmac
 import os
 import slack
 import sqlalchemy
+import sqreen
 
 from flask import Flask
 from flask import abort, jsonify
@@ -28,6 +29,7 @@ slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
 slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events", app)
 slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
+sqreen.start()
 
 ## helper functions
 def validate_slack_secret(request_body, timestamp, slack_signature):
