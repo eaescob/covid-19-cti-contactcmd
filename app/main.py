@@ -114,14 +114,9 @@ def listmembers():
         resp = build_resonse('Missing organization')
         return jsonify(resp)
     else:
-        cs = func.jsonb_each(CTIContact.data).alias('cs')
-        organization = column('cs', type_=JSONB)['organization'].astext
-
         cc = db.session.query(CTIContact).filter(
-            exists().select_from(cs).where(
-                func.lower(organization) == func.lower(text)
-            )
         ##    CTIContact.data.contains({'organization' : text})
+            func.lower(CTIContact.data['organization'].astext) == func.lower(text)
             ).first()
 
         if cc is None:
