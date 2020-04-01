@@ -74,7 +74,7 @@ class CTIHelp(db.Model):
 ##routes
 @app.errorhandler(Exception)
 def handle_exceptions(e):
-    return jsonify(error='An error has occurred, please contact @emilio', 500)
+    return jsonify(error='An error has occurred, please contact @emilio'), 500
 
 @app.errorhandler(403)
 def not_authorized(e):
