@@ -10,6 +10,8 @@ from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from flask_heroku import Heroku
 
+from slackeventsapi import SlackEventAdapter
+
 from sqlalchemy import column, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
@@ -21,9 +23,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 heroku = Heroku(app)
 db = SQLAlchemy(app)
+slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
+
+slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events", app)
 slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
-slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
+
 ## helper functions
 def validate_slack_secret(request_body, timestamp, slack_signature):
     sig_basestring = 'v0:' + timestamp + ':' + request_body
@@ -97,16 +102,6 @@ def listorgs():
     text=request.form['text']
     user_name=request.form['user_name']
     token=request.form['token']
-
-    request_body = request.get_data()
-    timestamp = request.headers['X-Slack-Request-Timestamp']
-    slack_signature = request.headers['X-Slack-Signature']
-
-    print (request_body)
-    print(timestamp)
-    print(slack_signature)
-    if not validate_slack_secret(request_body, timestamp, slack_signature):
-        return jsonify(error='Unauthorized'), 403
 
     all_ccs = db.session.query(CTIContact).all()
 
