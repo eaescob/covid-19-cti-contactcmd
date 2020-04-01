@@ -65,9 +65,9 @@ def addcontact():
         plural =""
         if len(orgs) > 0:
             plural="s"
-            
+
         message - "You have been added to the following organization%s: %s" % (plural, orgs)
-        foreach org in orgs:
+        for org in orgs:
             cc = CTIContact.query.filter(
                 CTIContact.data[
                     ('organization')
