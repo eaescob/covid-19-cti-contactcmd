@@ -34,6 +34,17 @@ def build_response(message):
     ]}
     return resp
 
+def get_slack_profile(user_id):
+    resp=slack.users_profile_get(user=user_id)
+    contact_info = {}
+    if resp['ok']:
+        contact_info={'full_name'} = resp['profile']['real_name']
+        contact_info={'display_name'} = resp['profile']['display_name']
+        contact_info={'title'} = resp['profile']['title']
+        contact_info={'capabilities'} = resp['profile']['fields']['Xf010LH9AH34']['value']
+
+    return contact_info
+
 ##ORM
 class CTIContact(db.Model):
     __tablename__ = 'cti_contacts'
@@ -67,9 +78,6 @@ def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
     token=request.form['token']
-    user_id=request.form['user_id']
-
-    print(user_id)
 
     secret_token=os.environ['LISTMEMBERS_SECRET']
 
@@ -90,7 +98,10 @@ def listmembers():
         else:
             contacts = ""
             for contact in cc.data['contacts']:
-                contacts += contact + '\n'
+                contact_info = get_slack_profile(contact)
+                contact_str = "{} (@{}, {} - {})".format(contact_info['full_name'], contact_info['display_name'],
+                                                         contact_info['title'], contact_info['capabilities'])
+                contacts += contact_str + '\n'
             contacts=contacts.rstrip('\n')
             message = "Contacs for {}:\n {}".format(text, contacts)
             resp = build_response(message)
@@ -126,7 +137,7 @@ def addcontact():
             if cc is None:
                 cc = CTIContact(
                     data = {'organization' : org,
-                            'contacts' : [user_name]}
+                            'contacts' : [user_id]}
                 )
                 db.session.add(cc)
                 db.session.commit()
