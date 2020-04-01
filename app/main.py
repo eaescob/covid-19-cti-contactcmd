@@ -10,7 +10,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_heroku import Heroku
 
 
-from sqlalchemy import column, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm.attributes import flag_modified
@@ -115,14 +114,9 @@ def listmembers():
         resp = build_resonse('Missing organization')
         return jsonify(resp)
     else:
-        cs = func.jsonb_array_elements(CTIContact.data).alias('cs')
-        org = column('cs', type_=JSONB)['organization'].astext
 
         cc = db.session.query(CTIContact).filter(
-            #CTIContact.data.contains({'organization' : text})
-            exists().select_from(cs).where(
-                func.lower(org) == func.lower(text)
-                )
+            CTIContact.data.contains({'organization' : text})
             ).first()
 
         if cc is None:
