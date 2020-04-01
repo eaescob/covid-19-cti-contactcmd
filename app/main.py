@@ -157,7 +157,7 @@ def addcontact():
         message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
             cc = db.session.query(CTIContact).filter(
-                CTIContact.data.contains({'organization' : org})
+                func.lower(CTIContact.data['organization'].astext) == func.lower(org)
             ).first()
             if cc is None:
                 cc = CTIContact(
