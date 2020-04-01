@@ -167,7 +167,7 @@ def addcontact():
                 db.session.add(cc)
                 db.session.commit()
             else:
-                cc.data['contacts'].append(user_name)
+                cc.data['contacts'].append(user_id)
                 flag_modified(cc, 'data')
                 db.session.add(cc)
                 db.session.commit()
