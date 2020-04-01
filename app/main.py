@@ -102,6 +102,9 @@ def listorgs():
     timestamp = request.headers['X-Slack-Request-Timestamp']
     slack_signature = request.headers['X-Slack-Signature']
 
+    print (request_body)
+    print(timestamp)
+    print(slack_signature)
     if not validate_slack_secret(request_body, timestamp, slack_signature):
         return jsonify(error='Unauthorized'), 403
 
