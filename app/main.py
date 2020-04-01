@@ -1,6 +1,6 @@
 import os
+import slack
 import sqlalchemy
-import urllib.parse
 
 from flask import Flask
 from flask import abort, jsonify
@@ -21,6 +21,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 heroku = Heroku(app)
 db = SQLAlchemy(app)
+slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
 ## helper functions
 def build_response(message):
@@ -66,6 +67,9 @@ def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
     token=request.form['token']
+    user_id=requets.form['user_id']
+
+    print(user_id)
 
     secret_token=os.environ['LISTMEMBERS_SECRET']
 
@@ -97,6 +101,7 @@ def addcontact():
     text=request.form['text']
     user_name=request.form['user_name']
     token=request.form['token']
+    user_id=request.form['user_id']
 
     secret_token=os.environ['ADDCONTACT_SECRET']
 
