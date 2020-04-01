@@ -92,7 +92,7 @@ def addcontact():
         if len(orgs) > 0:
             plural="s"
 
-        message - "You have been added to the following organization%s: %s" % (plural, orgs)
+        message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
             cc = CTIContact.query.filter(
                 CTIContact.data[
