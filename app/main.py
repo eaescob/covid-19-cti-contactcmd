@@ -72,6 +72,10 @@ class CTIHelp(db.Model):
                 return '<id {}>'.format(self.id)
 
 ##routes
+@app.errorhandler(Exception)
+def handle_exceptions(e):
+    return jsonify(error='An error has occurred, please contact @emilio', 500)
+
 @app.errorhandler(403)
 def not_authorized(e):
     return jsonify(error=str(e)), 403
@@ -93,7 +97,7 @@ def listorgs():
     for cc in all_ccs:
         message += cc.data['organization'] + '\n'
 
-    resp = build_resonse(message)
+    resp = build_response(message)
     return jsonify(resp)
 
 @app.route('/listmembers', methods=['POST'])
