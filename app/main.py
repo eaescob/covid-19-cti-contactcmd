@@ -97,7 +97,7 @@ def addcontact():
         for org in orgs:
             org = urllib.parse.quote(org)
             cc = db.session.query(CTIContact).filter(
-                CTIContact.data.contains({'organization' : text})
+                CTIContact.data.contains({'organization' : org})
             ).first()
             if cc is None:
                 cc = CTIContact(
