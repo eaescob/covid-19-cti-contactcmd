@@ -115,7 +115,7 @@ def listmembers():
         return jsonify(resp)
     else:
         cs = func.jsonb_each(CTIContact.data).alias('cs')
-        organization = column('cs', type)JSONB)['organization'].astext
+        organization = column('cs', type_=JSONB)['organization'].astext
 
         cc = db.session.query(CTIContact).filter(
             exists().select_from(cs).where(
