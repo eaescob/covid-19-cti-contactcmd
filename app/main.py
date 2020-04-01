@@ -1,6 +1,6 @@
 import os
 import sqlalchemy
-
+import urllib.parse
 
 from flask import Flask
 from flask import jsonify
@@ -9,9 +9,9 @@ from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from flask_heroku import Heroku
 
-from sqlalchemy.dialects.postgresql import JSONB
 
-from urllib import urlencode
+
+from sqlalchemy.dialects.postgresql import JSONB
 
 app = Flask(__name__)
 #app.config.from_object(os.environ['APP_SETTINGS'])
@@ -66,8 +66,7 @@ def listmembers():
         return jsonify(resp)
     else:
         cc = CTIContact.query.filter(
-            CTIContact.data['organization'
-            ].cast(sqlalchemy.Text) == text
+            CTIContact.data['organization'].cast(sqlalchemy.Text) == text
         ).first()
 
         if cc is None:
@@ -95,7 +94,7 @@ def addcontact():
 
         message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
-            org = urlencode(org)
+            org = urllib.parse.quote(org)
             cc = CTIContact.query.filter(
                 CTIContact.data[
                     ('organization')
