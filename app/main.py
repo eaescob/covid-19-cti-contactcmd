@@ -120,7 +120,7 @@ def listorgs():
 
 @app.route('/delorg', methods=['POST'])
 def deleteorg():
-    text=reuest.form['text']
+    text=request.form['text']
     user_id=request.form['user_id']
 
     if len(text) == 0:
@@ -143,7 +143,7 @@ def deleteorg():
     else:
         resp = build_response('You are not a member of {}'.format(text))
         return jsonify(resp)
-    
+
 @app.route('/listmembers', methods=['POST'])
 def listmembers():
     text=request.form['text']
