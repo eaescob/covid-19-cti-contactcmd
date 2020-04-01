@@ -119,7 +119,7 @@ def listmembers():
 
         cc = db.session.query(CTIContact).filter(
             exists().select_from(cs).where(
-                func.lower(organization) = func.lower(text)
+                func.lower(organization) == func.lower(text)
             )
         ##    CTIContact.data.contains({'organization' : text})
             ).first()
