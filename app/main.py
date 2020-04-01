@@ -1,3 +1,4 @@
+import hmac
 import os
 import slack
 import sqlalchemy
@@ -24,6 +25,16 @@ slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
 slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
 ## helper functions
+def validate_slack_secret(request_body, timestamp, slack_signature):
+    sig_basestring = 'v0:' + timestamp + ':' + request_body
+    my_signature = 'v0=' + hmac.compute_hash_sha256(
+        slack_signing_secret,
+        sig_basestring
+    ).hexdigest()
+
+    return my_signature == slack_signature
+
+
 def build_response(message):
     resp = { "blocks" : [
         { "type" : "section",
@@ -87,7 +98,12 @@ def listorgs():
     user_name=request.form['user_name']
     token=request.form['token']
 
-    secret_token=os.environ['LISTORGS_SECRET']
+    request_body = request.get_data()
+    timestamp = request.headers['X-Slack-Request-Timestamp']
+    slack_signature = request.headers['X-Slack-Signature']
+
+    if not validate_slack_secret(request_body, timestamp, slack_signature):
+        return jsonify(error='Unauthorized'), 403
 
     all_ccs = db.session.query(CTIContact).all()
 
