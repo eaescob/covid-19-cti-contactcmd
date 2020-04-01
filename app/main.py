@@ -67,7 +67,7 @@ def listmembers():
             CTIContact.data[
                 ('organization')
             ].cast(sqlalchemy.Text) == text
-        ).one()
+        ).first()
 
         if cc is None:
             resp = build_response('Organization {} not found'.format(text))
@@ -98,7 +98,7 @@ def addcontact():
                 CTIContact.data[
                     ('organization')
                 ].cast(sqlalchemy.Text) == org
-            ).one()
+            ).first()
             if cc is None:
                 cc = CTIContact(
                     data = {'organization' : org,
