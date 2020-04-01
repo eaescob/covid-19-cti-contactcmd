@@ -95,7 +95,7 @@ def listorgs():
 
     message = "Current registered organizations:\n"
     for cc in all_ccs:
-        message += cc.data['organization'] + '\n'
+        message += '- ' + cc.data['organization'] + '\n'
 
     resp = build_response(message)
     return jsonify(resp)
@@ -126,8 +126,7 @@ def listmembers():
             contacts = ""
             for contact in cc.data['contacts']:
                 contact_info = get_slack_profile(contact)
-                contact_str = "{} (@{}, {} - {})".format(contact_info['full_name'], contact_info['display_name'],
-                                                         contact_info['title'], contact_info['capabilities'])
+                contact_str = "-  {} (@{})".format(contact_info['full_name'], contact)
                 contacts += contact_str + '\n'
             contacts=contacts.rstrip('\n')
             message = "Contacs for {}:\n {}".format(text, contacts)
