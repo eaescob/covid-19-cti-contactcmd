@@ -118,6 +118,34 @@ def listorgs():
         resp = build_response(message)
     return jsonify(resp)
 
+@app.route('/leaveorg', methods=['POST'])
+def leaveorg():
+    text=request.form['text']
+    user_id=request.form['user_id']
+
+    if len(text) == 0:
+        resp = build_response('Missing organization')
+        return jsonify(resp)
+
+    cc = db.session.query(CTIContact).filter(
+        func.lower(CTIContact.data['organization'].astext) == func.lower(text)
+    ).first()
+
+    if cc is None:
+        resp = build_response('Organization {} not found'.format(text))
+        return jsonify(resp)
+    else:
+        if user_id in cc.data['contacts']:
+            cc.data['contacts'].remove(user_id)
+            flag_modified(cc, 'data')
+            db.session.add(cc)
+            db.session.commit()
+            resp = build_response('You have been removed from {}'.format(text))
+            return jsonify(resp)
+        else:
+            resp = build_response('You are not a contact for {}'.format(text))
+            return jsonify(resp)
+
 @app.route('/delorg', methods=['POST'])
 def deleteorg():
     text=request.form['text']
