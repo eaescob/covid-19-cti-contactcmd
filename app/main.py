@@ -3,7 +3,7 @@ import sqlalchemy
 import urllib.parse
 
 from flask import Flask
-from flask import jsonify
+from flask import abort, jsonify
 from flask import request
 
 from flask_sqlalchemy import SQLAlchemy
@@ -57,12 +57,21 @@ class CTIHelp(db.Model):
                 return '<id {}>'.format(self.id)
 
 ##routes
+@app.errorhandler(403)
+def not_authorized(e):
+    return jsonify(error=str(e)), 403
 
 @app.route('/listmembers', methods=['POST'])
 def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
     text=urllib.parse.quote(text)
+    token=request.form['token']
+
+    secret_token=os.environ['LISTMEMBERS_SECRET']
+
+    if token != secret_token:
+        abort(403, description='Not authorized')
 
     if len(text) == 0:
         resp = build_resonse('Missing organization')
@@ -88,6 +97,12 @@ def listmembers():
 def addcontact():
     text=request.form['text']
     user_name=request.form['user_name']
+    token=request.form['token']
+
+    secret_token=os.environ['ADDCONTACT_SECRET']
+
+    if token != secret_token:
+        abort(403, description='Not authorized')
 
     #error checking
     message = ""
