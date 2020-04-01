@@ -40,8 +40,7 @@ def get_slack_profile(user_id):
         contact_info= {
             'full_name' :   resp['profile']['real_name'],
             'display_name' :  resp['profile']['display_name'],
-            'title' :  resp['profile']['title'],
-            'capabilities' : resp['profile']['fields']['Xf010LH9AH34']['value']
+            'title' :  resp['profile']['title']
         }
 
 
