@@ -76,6 +76,30 @@ class CTIHelp(db.Model):
 def not_authorized(e):
     return jsonify(error=str(e)), 403
 
+@app.route('/listorgs', methods['POST'])
+def listorgs():
+    text=request.form['text']
+    user_name=request.form['user_name']
+    token=request.form['token']
+
+    secret_token=os.environ['LISTORGS_SECRET']
+
+    if token != secret_token:
+        abort(403, description='Not authorized')
+
+    if len(text) == 0:
+        resp = build_response('Missing organizatin')
+        return jsonify(resp)
+
+    all_ccs = db.session.qery(CTIContact).all()
+
+    message = "Current registered organizations:\n"
+    for cc in all_ccs:
+        message += cc.data['organization'] + '\n'
+
+    resp = build_resonse(message)
+    return jsonify(resp)
+
 @app.route('/listmembers', methods=['POST'])
 def listmembers():
     text=request.form['text']
