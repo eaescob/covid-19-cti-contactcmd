@@ -42,11 +42,9 @@ def validate_slack_secret(request_body, timestamp, slack_signature):
 
 def build_response(message):
     resp = { "blocks" : [
-        { "type" : "section",
-         "text" : {
-             "type" : "mrkdwn",
-             "text" : message
-         }}
+        { "type" : "mrkdwn",
+         "text" : message
+        }
     ]}
     return resp
 
