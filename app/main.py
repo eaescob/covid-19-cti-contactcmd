@@ -167,10 +167,15 @@ def addcontact():
                 db.session.add(cc)
                 db.session.commit()
             else:
-                cc.data['contacts'].append(user_id)
-                flag_modified(cc, 'data')
-                db.session.add(cc)
-                db.session.commit()
+
+                if user_id not in cc.data['contacts']:
+                    cc.data['contacts'].append(user_id)
+                    flag_modified(cc, 'data')
+                    db.session.add(cc)
+                    db.session.commit()
+                else:
+                    resp = build_response('Nice try, you already are part of {}'.format(org))
+                    return jsonify(resp)
 
     resp = build_response(message)
     return jsonify(resp)
