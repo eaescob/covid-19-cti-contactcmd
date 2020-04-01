@@ -47,7 +47,7 @@ def get_slack_profile(user_id):
         return contact_info
     except:
         pass
-return None
+    return None
 
 ##ORM
 class CTIContact(db.Model):
