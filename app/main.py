@@ -76,7 +76,7 @@ class CTIHelp(db.Model):
 def not_authorized(e):
     return jsonify(error=str(e)), 403
 
-@app.route('/listorgs', methods['POST'])
+@app.route('/listorgs', methods=['POST'])
 def listorgs():
     text=request.form['text']
     user_name=request.form['user_name']
