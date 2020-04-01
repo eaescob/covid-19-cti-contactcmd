@@ -87,10 +87,6 @@ def listorgs():
     if token != secret_token:
         abort(403, description='Not authorized')
 
-    if len(text) == 0:
-        resp = build_response('Missing organizatin')
-        return jsonify(resp)
-
     all_ccs = db.session.qery(CTIContact).all()
 
     message = "Current registered organizations:\n"
