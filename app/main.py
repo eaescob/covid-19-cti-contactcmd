@@ -76,7 +76,11 @@ def listmembers():
             resp = build_response('Organization {} not found'.format(text))
             return jsonify(resp)
         else:
-            message = "Contacs for {} : {}".format(text, cc.data['contacts'])
+            contacts = ""
+            for contact in cc.data['contacts']:
+                contacts += contact + '\n'
+            contacts.rstrip('\n')
+            message = "Contacs for {} : {}".format(text, contacts)
             resp = build_response(message)
             return jsonify(resp)
 
