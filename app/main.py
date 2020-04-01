@@ -60,13 +60,14 @@ class CTIHelp(db.Model):
 def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
+    text=urllib.parse.quote(text)
 
     if len(text) == 0:
         resp = build_resonse('Missing organization')
         return jsonify(resp)
     else:
-        cc = CTIContact.query.filter(
-            CTIContact.data['organization'].cast(sqlalchemy.Text) == text
+        cc = db.session.query(CTIContact).filter(
+            CTIContact.data.contains({'organization' : text})
         ).first()
 
         if cc is None:
