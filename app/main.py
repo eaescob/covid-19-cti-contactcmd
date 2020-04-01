@@ -126,7 +126,7 @@ def listmembers():
             contacts = ""
             for contact in cc.data['contacts']:
                 contact_info = get_slack_profile(contact)
-                contact_str = "-  {} (@{})".format(contact_info['full_name'], contact)
+                contact_str = "-  {} (<@{}>)".format(contact_info['full_name'], contact)
                 contacts += contact_str + '\n'
             contacts=contacts.rstrip('\n')
             message = "Contacs for {}:\n {}".format(text, contacts)
