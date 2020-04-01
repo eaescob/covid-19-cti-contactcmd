@@ -34,17 +34,19 @@ def build_response(message):
     return resp
 
 def get_slack_profile(user_id):
-    resp=slack.users_profile_get(user=user_id)
     contact_info = {}
-    if resp['ok']:
-        contact_info= {
-            'full_name' :   resp['profile']['real_name'],
-            'display_name' :  resp['profile']['display_name'],
-            'title' :  resp['profile']['title']
-        }
+    try:
+        resp=slack.users_profile_get(user=user_id)
+        if resp['ok']:
+            contact_info= {
+                'full_name' :   resp['profile']['real_name'],
+                'display_name' :  resp['profile']['display_name'],
+                'title' :  resp['profile']['title']
+                }
+        return contact_info
+    except:
 
-
-    return contact_info
+    return None
 
 ##ORM
 class CTIContact(db.Model):
@@ -86,9 +88,6 @@ def listorgs():
 
     secret_token=os.environ['LISTORGS_SECRET']
 
-    if token != secret_token:
-        abort(403, description='Not authorized')
-
     all_ccs = db.session.query(CTIContact).all()
 
     message = "Current registered organizations:\n"
@@ -110,7 +109,7 @@ def listmembers():
         abort(403, description='Not authorized')
 
     if len(text) == 0:
-        resp = build_resonse('Missing organization')
+        resp = build_response('Missing organization')
         return jsonify(resp)
     else:
         cc = db.session.query(CTIContact).filter(
@@ -125,7 +124,10 @@ def listmembers():
             contacts = ""
             for contact in cc.data['contacts']:
                 contact_info = get_slack_profile(contact)
-                contact_str = "-  {} (<@{}>)".format(contact_info['full_name'], contact)
+                if contact_info is not None:
+                    contact_str = "-  {} (<@{}>)".format(contact_info['full_name'], contact)
+                else:
+                    contact_str = "- {}".format(contact);
                 contacts += contact_str + '\n'
             contacts=contacts.rstrip('\n')
             message = "Contacs for {}:\n {}".format(text, contacts)
