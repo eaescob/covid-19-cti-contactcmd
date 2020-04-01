@@ -24,9 +24,6 @@ slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
 slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
 ## helper functions
-
-def validate_slack_signature():
-
 def build_response(message):
     resp = { "blocks" : [
         { "type" : "section",
@@ -109,9 +106,6 @@ def listmembers():
 
     secret_token=os.environ['LISTMEMBERS_SECRET']
 
-    if token != secret_token:
-        abort(403, description='Not authorized')
-
     if len(text) == 0:
         resp = build_response('Missing organization')
         return jsonify(resp)
@@ -146,9 +140,6 @@ def addcontact():
     user_id=request.form['user_id']
 
     secret_token=os.environ['ADDCONTACT_SECRET']
-
-    if token != secret_token:
-        abort(403, description='Not authorized')
 
     #error checking
     message = ""
