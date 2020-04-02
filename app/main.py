@@ -256,8 +256,8 @@ def listmembers():
             if cc is None:
                 resp = build_response('Organization {} not found'.format(text))
                 return jsonify(resp)
-            cc.set(text, cc.data)
-            cc.set(cc.data['organization'], cc.data)
+            mc.set(text, cc.data)
+            mc.set(cc.data['organization'], cc.data)
 
         contacts = ""
         for contact in cc.data['contacts']:
