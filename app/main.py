@@ -143,7 +143,7 @@ def leaveorg():
                 flag_modified(cc, 'data')
                 db.session.add(cc)
                 db.session.commit()
-                mc.set(text, cc.data)
+                mc.set(text, cc)
             else:
                 mc.delete(cc.data['organization'])
                 db.session.delete(cc)
@@ -223,7 +223,7 @@ def modorg():
         if user_id in cc.data['contacts']:
             mc.delete(cc.data['organization'])
             cc.data['organization'] = args[1]
-            mc.set(args[1], cc.data)
+            mc.set(args[1], cc)
             flag_modified(cc, 'data')
             db.session.add(cc)
             db.session.commit()
@@ -256,8 +256,8 @@ def listmembers():
             if cc is None:
                 resp = build_response('Organization {} not found'.format(text))
                 return jsonify(resp)
-            mc.set(text, cc.data)
-            mc.set(cc.data['organization'], cc.data)
+            mc.set(text, cc)
+            mc.set(cc.data['organization'], cc)
 
         contacts = ""
         for contact in cc.data['contacts']:
@@ -303,11 +303,11 @@ def addcontact():
                 )
                 db.session.add(cc)
                 db.session.commit()
-                cc.set(org, cc.data)
+                cc.set(org, cc)
             else:
                 if user_id not in cc.data['contacts']:
                     cc.data['contacts'].append(user_id)
-                    cc.set(cc.data['organization'], cc.data)
+                    cc.set(cc.data['organization'], cc)
                     flag_modified(cc, 'data')
                     db.session.add(cc)
                     db.session.commit()
