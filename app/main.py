@@ -31,6 +31,8 @@ slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events", 
 slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','), os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
+mc.flush_all()
+
 sqreen.start()
 
 ## helper functions
