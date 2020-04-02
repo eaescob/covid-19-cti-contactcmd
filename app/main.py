@@ -100,7 +100,6 @@ def not_authorized(e):
 def listorgs():
     text=request.form['text']
     user_name=request.form['user_name']
-    token=request.form['token']
 
     all_ccs = db.session.query(CTIContact).all()
     resp = {}
@@ -177,6 +176,22 @@ def deleteorg():
         resp = build_response('You are not a member of {}'.format(text))
         return jsonify(resp)
 
+@app.route('/listmyorgs', methods=['POST'])
+def listmyorgs():
+    text=request.form['text']
+    user_id=request.form['user_id']
+
+    all_ccs = db.session.query(CTIContact).all()
+
+    message = "You are a contact for the following organizations:\n"
+
+    for cc in all_ccs:
+        if user_id in cc.data['contacts']:
+            message += '- ' + cc.data['organization'] + '\n'
+
+    resp = build_response(message)
+    return jsonify(resp)
+
 @app.route('/modorg', methods=['POST'])
 def modorg():
     text=request.form['text']
@@ -217,9 +232,6 @@ def modorg():
 def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
-    token=request.form['token']
-
-    secret_token=os.environ['LISTMEMBERS_SECRET']
 
     if len(text) == 0:
         resp = build_response('Missing organization')
@@ -251,10 +263,8 @@ def listmembers():
 def addcontact():
     text=request.form['text']
     user_name=request.form['user_name']
-    token=request.form['token']
     user_id=request.form['user_id']
 
-    secret_token=os.environ['ADDCONTACT_SECRET']
 
     #error checking
     message = ""
@@ -268,6 +278,8 @@ def addcontact():
 
         message = "You have been added to the following organization%s: %s" % (plural, orgs)
         for org in orgs:
+            org = org.lstrip(' ')
+            org = org.rstrip(' ')
             cc = db.session.query(CTIContact).filter(
                 func.lower(CTIContact.data['organization'].astext) == func.lower(org)
             ).first()
@@ -279,7 +291,6 @@ def addcontact():
                 db.session.add(cc)
                 db.session.commit()
             else:
-
                 if user_id not in cc.data['contacts']:
                     cc.data['contacts'].append(user_id)
                     flag_modified(cc, 'data')
