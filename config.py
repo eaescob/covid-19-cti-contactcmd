@@ -1,4 +1,6 @@
 import os
+
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config(object):
@@ -6,6 +8,12 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size' : 10,
+        'pool_recycle' : 90,
+        'pool_timeout' : 900,
+        'max_overflow' : 5,
+    }
 
 class ProductionConfig(Config):
     DEBUG = False
