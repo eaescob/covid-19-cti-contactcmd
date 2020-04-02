@@ -20,6 +20,7 @@ Jinja2==2.11.1
 Mako==1.1.2
 MarkupSafe==1.1.1
 multidict==4.7.5
+newrelic==5.10.0.138
 psycopg2==2.8.4
 py-mini-racer==0.2.0
 pyee==7.0.1
