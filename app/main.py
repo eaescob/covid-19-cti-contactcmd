@@ -305,11 +305,11 @@ def addcontact():
                 )
                 db.session.add(cc)
                 db.session.commit()
-                cc.set(org, cc)
+                mc.set(org, cc)
             else:
                 if user_id not in cc.data['contacts']:
                     cc.data['contacts'].append(user_id)
-                    cc.set(cc.data['organization'], cc)
+                    mc.set(cc.data['organization'], cc)
                     flag_modified(cc, 'data')
                     db.session.add(cc)
                     db.session.commit()
