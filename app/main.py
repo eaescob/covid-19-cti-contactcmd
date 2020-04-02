@@ -1,3 +1,4 @@
+import bmemcached
 import hmac
 import os
 import slack
@@ -28,6 +29,7 @@ slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
 
 slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events", app)
 slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
+mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','), os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 sqreen.start()
 
@@ -141,7 +143,9 @@ def leaveorg():
                 flag_modified(cc, 'data')
                 db.session.add(cc)
                 db.session.commit()
+                mc.set(text, cc.data)
             else:
+                mc.delete(cc.data['organization'])
                 db.session.delete(cc)
                 db.session.commit()
             resp = build_response('You have been removed from {}'.format(text))
@@ -168,6 +172,7 @@ def deleteorg():
         return jsonify(resp)
 
     if user_id in cc.data['contacts']:
+        mc.delete(cc.data['organization'])
         db.session.delete(cc)
         db.session.commit()
         resp = build_response('Organization {} has been removed'.format(text))
@@ -216,7 +221,9 @@ def modorg():
         return jsonify(resp)
     else:
         if user_id in cc.data['contacts']:
+            mc.delete(cc.data['organization'])
             cc.data['organization'] = args[1]
+            mc.set(args[1], cc.data)
             flag_modified(cc, 'data')
             db.session.add(cc)
             db.session.commit()
@@ -237,27 +244,33 @@ def listmembers():
         resp = build_response('Missing organization')
         return jsonify(resp)
     else:
-        cc = db.session.query(CTIContact).filter(
-        ##    CTIContact.data.contains({'organization' : text})
-            func.lower(CTIContact.data['organization'].astext) == func.lower(text)
-            ).first()
+
+        cc = mc.get(text)
 
         if cc is None:
-            resp = build_response('Organization {} not found'.format(text))
-            return jsonify(resp)
-        else:
-            contacts = ""
-            for contact in cc.data['contacts']:
-                contact_info = get_slack_profile(contact)
-                if contact_info is not None:
-                    contact_str = "-  {} (<@{}>)".format(contact_info['full_name'], contact)
-                else:
-                    contact_str = "- {}".format(contact);
-                contacts += contact_str + '\n'
-            contacts=contacts.rstrip('\n')
-            message = "Contacs for {}:\n {}".format(text, contacts)
-            resp = build_response(message)
-            return jsonify(resp)
+            cc = db.session.query(CTIContact).filter(
+            ##    CTIContact.data.contains({'organization' : text})
+                func.lower(CTIContact.data['organization'].astext) == func.lower(text)
+                ).first()
+
+            if cc is None:
+                resp = build_response('Organization {} not found'.format(text))
+                return jsonify(resp)
+            cc.set(text, cc.data)
+            cc.set(cc.data['organization'], cc.data)
+
+        contacts = ""
+        for contact in cc.data['contacts']:
+            contact_info = get_slack_profile(contact)
+            if contact_info is not None:
+                contact_str = "-  {} (<@{}>)".format(contact_info['full_name'], contact)
+            else:
+                contact_str = "- {}".format(contact);
+            contacts += contact_str + '\n'
+        contacts=contacts.rstrip('\n')
+        message = "Contacs for {}:\n {}".format(text, contacts)
+        resp = build_response(message)
+        return jsonify(resp)
 
 @app.route('/addcontact', methods=['POST'])
 def addcontact():
@@ -290,9 +303,11 @@ def addcontact():
                 )
                 db.session.add(cc)
                 db.session.commit()
+                cc.set(org, cc.data)
             else:
                 if user_id not in cc.data['contacts']:
                     cc.data['contacts'].append(user_id)
+                    cc.set(cc.data['organization'], cc.data)
                     flag_modified(cc, 'data')
                     db.session.add(cc)
                     db.session.commit()
