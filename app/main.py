@@ -256,7 +256,7 @@ def listmembers():
                 contact_str = "- {}".format(contact);
             contacts += contact_str + '\n'
         contacts=contacts.rstrip('\n')
-        message = "Contacs for {}:\n {}".format(text, contacts)
+        message = "Contacts for {}:\n {}".format(text, contacts)
         resp = build_response(message)
         return jsonify(resp)
 
