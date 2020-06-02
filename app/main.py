@@ -1,92 +1,48 @@
 import bmemcached
 import hmac
 import os
-import slack
 import sqlalchemy
 import sqreen
 
 from flask import Flask
 from flask import abort, jsonify
-from flask import request
+from flask import request, make_response
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_heroku import Heroku
-
-from slackeventsapi import SlackEventAdapter
+from flask_slacksigauth import slack_sig_auth
 
 from sqlalchemy import column, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm.attributes import flag_modified
 
+from app.utils import *
+from app.exceptions import OrgLookupException
+
+from config import ProductionConfig
+
 app = Flask(__name__)
-#app.config.from_object(os.environ['APP_SETTINGS'])
+app.config.from_object(ProductionConfig())
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 heroku = Heroku(app)
 db = SQLAlchemy(app)
-slack_signing_secret = os.environ['SLACK_SIGNING_SECRET']
-
-slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events", app)
-slack = slack.WebClient(token=os.environ['SLACK_API_TOKEN'])
 
 sqreen.start()
-
-## helper functions
-def validate_slack_secret(request_body, timestamp, slack_signature):
-    sig_basestring = 'v0:' + timestamp + ':' + request_body
-    my_signature = 'v0=' + hmac.compute_hash_sha256(
-        slack_signing_secret,
-        sig_basestring
-    ).hexdigest()
-
-    return my_signature == slack_signature
-
-
-def build_response(message):
-    resp = { "response_type" : "ephemeral",
-            "text" : message,
-            "type" : "mrkdwn"
-            }
-    return resp
-
-def get_slack_profile(user_id):
-    contact_info = {}
-    try:
-        resp=slack.users_profile_get(user=user_id)
-        if resp['ok']:
-            contact_info= {
-                'full_name' :   resp['profile']['real_name'],
-                'display_name' :  resp['profile']['display_name'],
-                'title' :  resp['profile']['title']
-                }
-        return contact_info
-    except:
-        pass
-    return None
-
 ##ORM
 class CTIContact(db.Model):
     __tablename__ = 'cti_contacts'
     id = db.Column(db.Integer, primary_key=True)
-    data = db.Column(MutableDict.as_mutable(JSONB))
+    organization = db.Column(db.String(128))
+    contacts = db.Column(MutableDict.as_mutable(JSONB))
 
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, organization: str, contacts: dict = {}):
+        self.organization = organization
+        self.contacts = contacts
 
     def __repr__(self):
             return '<id {}>'.format(self.id)
-
-class CTIHelp(db.Model):
-        __tablename__ = 'cti_help'
-        id = db.Column(db.Integer, primary_key=True)
-        data = db.Column(MutableDict.as_mutable(JSONB))
-
-        def __init__(self, data):
-                sefl.data = data;
-
-        def __repr__(self):
-                return '<id {}>'.format(self.id)
 
 ##routes
 ##@app.errorhandler(Exception)
@@ -98,27 +54,44 @@ def not_authorized(e):
     return jsonify(error=str(e)), 403
 
 @app.route('/listorgs', methods=['POST'])
+@slack_sig_auth
 def listorgs():
     text=request.form['text']
     user_name=request.form['user_name']
+    trigger_id=request.form['trigger_id']
 
-    all_ccs = db.session.query(CTIContact).all()
-    resp = {}
+    all_ccs = db.session.query(CTIContact).order_by(CTIContact.id).all()
+    orgs = []
+    message = ""
+    title = ""
+
     if len(text) == 0:
-        message = "Current registered organizations:\n"
+        title = "Current registered organizations:\n"
         for cc in all_ccs:
-            message += '- ' + cc.data['organization'] + '\n'
-
-        resp = build_response(message)
+            orgs.append(cc.organization)
     else:
-        message = "Organizations matching your search:\n"
+        title = "Organizations matching your search:\n"
         for cc in all_ccs:
-            if text.lower() in cc.data['organization'].lower():
-                message += '- ' + cc.data['organization'] + '\n'
-        resp = build_response(message)
+            if text.lower() in cc.organization.lower():
+                orgs.append(cc.organization)
+            last_id=cc.id
+
+    orgs = sorted(orgs)
+    for org in orgs:
+        message += "- {}\n".format(org)
+
+    resp = add_noaction_modal_section(title, trigger_id)
+    fields = add_fields_section(orgs)
+
+    resp['blocks'] = []
+
+    for field in fields:
+        resp['blocks'].append(field)
+    #resp = build_response(message)
     return jsonify(resp)
 
 @app.route('/leaveorg', methods=['POST'])
+@slack_sig_auth
 def leaveorg():
     text=request.form['text']
     user_id=request.form['user_id']
@@ -128,18 +101,18 @@ def leaveorg():
         return jsonify(resp)
 
     cc = db.session.query(CTIContact).filter(
-        func.lower(CTIContact.data['organization'].astext) == func.lower(text)
+        func.lower(CTIContact.organization.astext) == func.lower(text)
     ).first()
 
     if cc is None:
         resp = build_response('Organization {} not found'.format(text))
         return jsonify(resp)
     else:
-        if user_id in cc.data['contacts']:
-            cc.data['contacts'].remove(user_id)
+        if user_id in cc.contacts['slack']:
+            cc.contacts['slack'].remove(user_id)
 
-            if len(cc.data['contacts']) > 0:
-                flag_modified(cc, 'data')
+            if len(cc.contacts['slack']) > 0:
+                flag_modified(cc, 'contacts')
                 db.session.add(cc)
                 db.session.commit()
             else:
@@ -152,6 +125,7 @@ def leaveorg():
             return jsonify(resp)
 
 @app.route('/delorg', methods=['POST'])
+@slack_sig_auth
 def deleteorg():
     text=request.form['text']
     user_id=request.form['user_id']
@@ -161,14 +135,14 @@ def deleteorg():
         return jsonify(resp)
 
     cc = db.session.query(CTIContact).filter(
-        func.lower(CTIContact.data['organization'].astext) == func.lower(text)
+        func.lower(CTIContact.organization.astext) == func.lower(text)
     ).first()
 
     if cc is None:
         resp = build_response('Organization {} not found'.format(text))
         return jsonify(resp)
 
-    if user_id in cc.data['contacts']:
+    if user_id in cc.contacts['slack']:
         db.session.delete(cc)
         db.session.commit()
         resp = build_response('Organization {} has been removed'.format(text))
@@ -178,22 +152,32 @@ def deleteorg():
         return jsonify(resp)
 
 @app.route('/listmyorgs', methods=['POST'])
+@slack_sig_auth
 def listmyorgs():
     text=request.form['text']
     user_id=request.form['user_id']
 
     all_ccs = db.session.query(CTIContact).all()
 
-    message = "You are a contact for the following organizations:\n"
+    message = "You are a contact for the following organizations:"
+    resp = {}
+    resp['blocks'] = []
+    resp['blocks'].append(add_mrkdwn_section(message))
+    orgs = []
 
     for cc in all_ccs:
-        if user_id in cc.data['contacts']:
-            message += '- ' + cc.data['organization'] + '\n'
+        if user_id in cc.contacts['slack']:
+            orgs.append(cc.organization)
 
-    resp = build_response(message)
+    fields = add_fields_section(orgs)
+
+    for field in fields:
+        resp['blocks'].append(field)
+
     return jsonify(resp)
 
 @app.route('/modorg', methods=['POST'])
+@slack_sig_auth
 def modorg():
     text=request.form['text']
     user_id=request.form['user_id']
@@ -209,16 +193,16 @@ def modorg():
         return jsonify(resp)
 
     cc = db.session.query(CTIContact).filter(
-        func.lower(CTIContact.data['organization'].astext) == func.lower(args[0])
+        func.lower(CTIContact.organization.astext) == func.lower(args[0])
     ).first()
 
     if cc is None:
         resp = build_response('Organization {} not found'.format(text))
         return jsonify(resp)
     else:
-        if user_id in cc.data['contacts']:
-            cc.data['organization'] = args[1]
-            flag_modified(cc, 'data')
+        if user_id in cc.contacts['slack']:
+            cc.organization = args[1]
+            flag_modified(cc, 'organization')
             db.session.add(cc)
             db.session.commit()
 
@@ -230,6 +214,7 @@ def modorg():
 
 
 @app.route('/listmembers', methods=['POST'])
+@slack_sig_auth
 def listmembers():
     text=request.form['text']
     user_name=request.form['user_name']
@@ -240,32 +225,38 @@ def listmembers():
     else:
         cc = db.session.query(CTIContact).filter(
         ##    CTIContact.data.contains({'organization' : text})
-            func.lower(CTIContact.data['organization'].astext) == func.lower(text)
+            func.lower(CTIContact.organization.astext) == func.lower(text)
             ).first()
 
         if cc is None:
             resp = build_response('Organization {} not found'.format(text))
             return jsonify(resp)
 
-        contacts = ""
-        for contact in cc.data['contacts']:
+        contacts = []
+        for contact in cc.contacts['slack']:
             contact_info = get_slack_profile(contact)
             if contact_info is not None:
-                contact_str = "-  {} (<@{}>)".format(contact_info['full_name'], contact)
+                contact_str = "{} (<@{}>)".format(contact_info['full_name'], contact)
             else:
-                contact_str = "- {}".format(contact);
-            contacts += contact_str + '\n'
-        contacts=contacts.rstrip('\n')
-        message = "Contacts for {}:\n {}".format(text, contacts)
-        resp = build_response(message)
+                contact_str = "{}".format(contact);
+            contacts.append(contact_str)
+
+        resp = {}
+        resp['blocks'] = []
+        resp['blocks'].append(add_mrkdwn_section('Contacts for {}'.format(text)))
+
+        fields = add_fields_section(contacts, False)
+
+        for field in fields:
+            resp['blocks'].append(field)
         return jsonify(resp)
 
 @app.route('/addcontact', methods=['POST'])
+@slack_sig_auth
 def addcontact():
     text=request.form['text']
     user_name=request.form['user_name']
     user_id=request.form['user_id']
-
 
     #error checking
     message = ""
@@ -281,20 +272,22 @@ def addcontact():
         for org in orgs:
             org = org.lstrip(' ')
             org = org.rstrip(' ')
+            org = org.replace('<', '')
+            org = org.replace('>', '')
             cc = db.session.query(CTIContact).filter(
-                func.lower(CTIContact.data['organization'].astext) == func.lower(org)
+                func.lower(CTIContact.organization.astext) == func.lower(org)
             ).first()
             if cc is None:
                 cc = CTIContact(
-                    data = {'organization' : org,
-                            'contacts' : [user_id]}
+                    organization=org,
+                    contacts = { 'slack' : [user_id], 'emails': []}
                 )
                 db.session.add(cc)
                 db.session.commit()
             else:
-                if user_id not in cc.data['contacts']:
-                    cc.data['contacts'].append(user_id)
-                    flag_modified(cc, 'data')
+                if user_id not in cc.contacts['slack']:
+                    cc.contacts['slack'].append(user_id)
+                    flag_modified(cc, 'contacts')
                     db.session.add(cc)
                     db.session.commit()
                 else:
